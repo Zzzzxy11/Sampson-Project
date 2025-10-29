@@ -20,6 +20,5 @@ void setup() {
   }
 
   saveTable(data, "fake-data.csv");
-  println("✅ simple-fake-data.csv saved!");
   exit();
 }

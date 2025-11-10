@@ -1,0 +1,146 @@
+Table table;
+int totalDays = 7;
+int currentDay = 1;
+int currentRoomIndex = 0;
+int hours = 24;
+
+int[] rooms = {204,205,206,207,208,209,210,211,212,213,214,215,216,217};
+float[] indoorTemp = new float[hours];
+float[] outdoorTemp = new float[hours];
+float[] indoorHum = new float[hours];
+float[] outdoorHum = new float[hours];
+
+void setup() {
+  size(1000, 600);
+  table = loadTable("sampson-week-data.csv", "header");
+  loadDay(currentDay, rooms[currentRoomIndex]);
+}
+
+void draw() {
+  background(250);
+  drawAxes();
+  drawBars();
+  drawHumidityLines();
+  drawTitle();
+  drawInfo();
+}
+
+void loadDay(int day, int room) {
+  for (int i = 0; i < hours; i++) {
+    indoorTemp[i] = 0;
+    outdoorTemp[i] = 0;
+    indoorHum[i] = 0;
+    outdoorHum[i] = 0;
+  }
+  for (TableRow r : table.rows()) {
+    int d = int(r.getFloat("day"));
+    int rm = int(r.getFloat("room"));
+    int h = int(r.getFloat("hour")) - 1;
+    if (d == day && rm == room && h >= 0 && h < hours) {
+      indoorTemp[h] = r.getFloat("indoorTemp");
+      outdoorTemp[h] = r.getFloat("outdoorTemp");
+      indoorHum[h] = r.getFloat("indoorHumidity");
+      outdoorHum[h] = r.getFloat("outdoorHumidity");
+    }
+  }
+}
+
+void drawAxes() {
+  stroke(0);
+  strokeWeight(2);
+  line(80, 60, 80, height - 80);
+  line(width - 80, 60, width - 80, height - 80);
+  line(80, height - 80, width - 80, height - 80);
+  strokeWeight(1);
+  fill(0);
+  textAlign(CENTER, TOP);
+  for (int i = 0; i <= 24; i += 3) {
+    float x = map(i, 0, 24, 80, width - 80);
+    line(x, height - 80, x, height - 70);
+    text(i, x, height - 65);
+  }
+  textAlign(RIGHT, CENTER);
+  for (int t = 10; t <= 35; t += 5) {
+    float y = map(t, 10, 35, height - 80, 80);
+    line(75, y, 85, y);
+    text(t, 70, y);
+  }
+  textAlign(CENTER, BOTTOM);
+  text("Temperature (°C)", 80, 55);
+  textAlign(LEFT, CENTER);
+  for (int h = 30; h <= 100; h += 10) {
+    float y = map(h, 30, 100, height - 80, 80);
+    line(width - 85, y, width - 75, y);
+    text(h, width - 70, y);
+  }
+  textAlign(CENTER, BOTTOM);
+  text("Humidity (%)", width - 80, 55);
+}
+
+void drawBars() {
+  float spacing = 10;
+  float barWidth = (width - 160 - spacing * (hours - 1)) / hours;
+  for (int i = 0; i < hours; i++) {
+    float indoorHeight = map(indoorTemp[i], 10, 35, 0, height - 160);
+    float outdoorHeight = map(outdoorTemp[i], 10, 35, 0, height - 160);
+    float indoorAlpha = map(indoorHum[i], 0, 100, 50, 255);
+    float outdoorAlpha = map(outdoorHum[i], 0, 100, 50, 255);
+    float x = 80 + i * (barWidth + spacing);
+    float y = height - 80;
+    fill(255, 230, 150, indoorAlpha);
+    rect(x, y - indoorHeight, barWidth / 2, indoorHeight);
+    fill(120, 200, 255, outdoorAlpha);
+    rect(x + barWidth / 2, y - outdoorHeight, barWidth / 2, outdoorHeight);
+  }
+}
+
+void drawHumidityLines() {
+  strokeWeight(2);
+  noFill();
+  stroke(180, 255, 180);
+  beginShape();
+  for (int i = 0; i < hours; i++) {
+    float x = map(i, 0, hours - 1, 80, width - 80);
+    float y = map(indoorHum[i], 30, 100, height - 80, 80);
+    vertex(x, y);
+  }
+  endShape();
+  stroke(255, 210, 150);
+  beginShape();
+  for (int i = 0; i < hours; i++) {
+    float x = map(i, 0, hours - 1, 80, width - 80);
+    float y = map(outdoorHum[i], 30, 100, height - 80, 80);
+    vertex(x, y);
+  }
+  endShape();
+}
+
+void drawTitle() {
+  fill(0);
+  textAlign(CENTER, CENTER);
+  textSize(18);
+  text("Sampson Indoor/Outdoor Temperature & Humidity", width / 2, 30);
+}
+
+void drawInfo() {
+  fill(0);
+  textSize(13);
+  textAlign(LEFT);
+  text("Day " + currentDay , 100, height - 40);
+  text("Room " + rooms[currentRoomIndex] , 180, height - 40);
+  text("← →: Days   ↑ ↓: Rooms", 350, height - 40);
+  text("Yellow = Indoor Temp | Blue = Outdoor Temp | Green = Indoor Hum | Orange = Outdoor Hum", 100, height - 25);
+}
+
+void keyPressed() {
+  if (keyCode == RIGHT) {
+    currentDay = min(totalDays, currentDay + 1);
+  } else if (keyCode == LEFT) {
+    currentDay = max(1, currentDay - 1);
+  } else if (keyCode == UP) {
+    currentRoomIndex = (currentRoomIndex + 1) % rooms.length;
+  } else if (keyCode == DOWN) {
+    currentRoomIndex = (currentRoomIndex - 1 + rooms.length) % rooms.length;
+  }
+  loadDay(currentDay, rooms[currentRoomIndex]);
+}
